@@ -3,10 +3,10 @@ lua-netfilter_log - Lua bindings for libnetfilter_log
 :author: Christian Wiese
 :email:  chris@opensde.org
 
-
 [WARNING]
-The Lua bindings for `libnetfilter_log` provided here are in a very early stage of
-development, thus do not use them in a production environment!
+The Lua bindings for `libnetfilter_log` provided here are *not complete* and in
+a very early stage of development, thus do not use them in a production
+environment!
 
 Build Dependencies
 ------------------
