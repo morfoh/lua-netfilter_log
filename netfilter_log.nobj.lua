@@ -7,10 +7,11 @@ luajit_ffi = true,
 -- load NETFILTER_LOG shared library.
 ffi_load"netfilter_log",
 
-include "netfilter_log.h",
+include "sys/types.h",
+include "libnetfilter_log/libnetfilter_log.h",
 
 subfiles {
-"src/object.nobj.lua",
+"src/nflog.nobj.lua",
 },
 }
 
