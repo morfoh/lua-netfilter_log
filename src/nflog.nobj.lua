@@ -18,18 +18,21 @@
 -- -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 -- -- THE SOFTWARE.
 
+-- typedefs
+c_source "typedefs" [[
+typedef struct nflog_handle nflog;
+typedef struct nflog_g_handle nflog_group;
+]]
+-- pass extra C type info to FFI.
+ffi_cdef [[
+typedef struct nflog_handle nflog;
+typedef struct nflog_g_handle nflog_group;
+]]
+
 --
 -- nflog handle
 --
 object "nflog" {
-	-- map the real nflog_handle type
-	c_source [[
-	typedef struct nflog_handle nflog;
-]],
-	-- Use `ffi_cdef` records to pass extra C type info to FFI.
-	ffi_cdef [[
-	typedef struct nflog_handle nflog;
-]],
 	-- The first constructor can be called as: netfilter_log.nflog() or netfilter_log.nflog.new()
 	-- The default name for a constructor is 'new'
   constructor {
@@ -57,14 +60,6 @@ object "nflog" {
 -- nflog group handle
 --
 object "nflog_group" {
-	-- map the real nflog_g_handle type
-	c_source [[
-	typedef struct nflog_g_handle nflog_group;
-]],
-	-- Use `ffi_cdef` records to pass extra C type info to FFI.
-	ffi_cdef [[
-	typedef struct nflog_g_handle nflog_group;
-]],
 	-- The first constructor can be called as: netfilter_log.nflog_group() or netfilter_log.nflog_group.new()
 	-- The default name for a constructor is 'new'
   constructor {
