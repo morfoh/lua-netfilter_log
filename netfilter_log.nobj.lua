@@ -1,3 +1,5 @@
+-- make generated variable nicer
+set_variable_format "%s"
 
 c_module "netfilter_log" {
 
