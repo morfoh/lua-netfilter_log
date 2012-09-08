@@ -70,4 +70,24 @@ object "nflog_group" {
   destructor "unbind" {
     c_method_call "int" "nflog_unbind_group" {}
   },
+
+  method "set_mode" {
+    c_method_call "int" "nflog_set_mode" { "uint8_t", "mode", "uint32_t", "range" }
+  },
+
+  method "set_timeout" {
+    c_method_call "int" "nflog_set_timeout" { "uint32_t", "timeout" }
+  },
+
+  method "set_qtresh" {
+    c_method_call "int" "nflog_set_qthresh" { "uint32_t", "qthresh" }
+  },
+
+  method "set_nlbufsiz" {
+    c_method_call "int" "nflog_set_nlbufsiz" { "uint32_t", "nlbufsiz" }
+  },
+
+  method "set_flags" {
+    c_method_call "int" "nflog_set_flags" { "uint16_t", "flags" }
+  },
 }
