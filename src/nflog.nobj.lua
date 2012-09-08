@@ -48,3 +48,26 @@ object "nflog" {
     c_method_call "int" "nflog_unbind_pf" { "uint16_t", "pf" }
   },
 }
+
+--
+-- nflog group handle
+--
+object "nflog_group" {
+	-- map the real nflog_g_handle type
+	c_source [[
+	typedef struct nflog_g_handle nflog_group;
+]],
+	-- Use `ffi_cdef` records to pass extra C type info to FFI.
+	ffi_cdef [[
+	typedef struct nflog_g_handle nflog_group;
+]],
+	-- The first constructor can be called as: netfilter_log.nflog_group() or netfilter_log.nflog_group.new()
+	-- The default name for a constructor is 'new'
+  constructor {
+    c_call "nflog_group *" "nflog_bind_group" { "nflog *", "nflog_handle", "uint16_t", "num"}
+  },
+	-- "unbind" destructor allows freeing of the object before it gets GC'ed
+  destructor "unbind" {
+    c_method_call "int" "nflog_unbind_group" {}
+  },
+}
