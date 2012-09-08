@@ -47,6 +47,10 @@ object "nflog" {
   method "unbind_pf" {
     c_method_call "int" "nflog_unbind_pf" { "uint16_t", "pf" }
   },
+
+  method "fd" {
+    c_method_call "int" "nflog_fd" {}
+  },
 }
 
 --
