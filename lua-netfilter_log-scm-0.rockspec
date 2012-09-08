@@ -3,14 +3,14 @@
 package	= 'lua-netfilter_log'
 version	= 'scm-0'
 source	= {
-	url	= '__project_git_url__'
+	url	= 'https://github.com/morfoh/lua-netfilter_log'
 }
 description	= {
-	summary	= "LuaNativeObjects project template.",
+	summary	= "Lua bindings for libnetfilter_log.",
 	detailed	= '',
-	homepage	= '__project_homepage__',
+	homepage	= 'https://github.com/morfoh/lua-netfilter_log',
 	license	= 'MIT',
-	maintainer = "christian wiese",
+	maintainer = "Christian Wiese",
 }
 dependencies = {
 	'lua >= 5.1',
