@@ -22,6 +22,8 @@
 local typedefs = [[
 typedef struct nflog_handle nflog;
 typedef struct nflog_g_handle nflog_group;
+typedef struct nfgenmsg nfgenmsg;
+typedef struct nflog_data nflog_data;
 ]]
 c_source "typedefs" (typedefs)
 -- pass extra C type info to FFI.
@@ -53,6 +55,10 @@ object "nflog" {
     c_method_call "int" "nflog_fd" {}
   },
 }
+
+-- nflog callback type
+callback_type "NFLogFunc" "int"
+	{ "nflog_group *", "gh", "nfgenmsg *", "nfmsg", "nflog_data *", "nfd", "void *", "%data" }
 
 --
 -- nflog group handle
@@ -86,5 +92,13 @@ object "nflog_group" {
 
   method "set_flags" {
     c_method_call "int" "nflog_set_flags" { "uint16_t", "flags" }
+  },
+  method "callback_register" {
+		callback { "NFLogFunc", "func", "func_data", owner = "this",
+			-- code to run if Lua callback function throws an error.
+			c_source[[${ret} = -1;]],
+			ffi_source[[${ret} = -1;]],
+		},
+		c_method_call "int" "nflog_callback_register" { "NFLogFunc", "func", "void *", "func_data" },
   },
 }
