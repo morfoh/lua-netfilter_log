@@ -69,6 +69,19 @@ object "nflog" {
   method "fd" {
     c_method_call "int" "nflog_fd" {}
   },
+  method "handle_packet" {
+		var_out{ "int", "rc" },
+		c_source[[
+#define BUF_LEN 4096
+	int fd = nflog_fd(${this});
+	char buf[BUF_LEN];
+
+	${rc} = recv(fd, buf, sizeof(buf), 0);
+	if(${rc} >= 0) {
+		${rc} = nflog_handle_packet(${this}, buf, ${rc});
+	}
+]],
+  },
 }
 
 -- nflog callback type
