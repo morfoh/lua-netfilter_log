@@ -134,6 +134,10 @@ object "nflog_group" {
   },
 }
 
+-- get the hardware link layer type from logging data
+c_function "get_hwtype" {
+	c_call "uint16_t" "nflog_get_hwtype" { "nflog_data *", "nfad" },
+}
 -- get the interface that the packet was received through
 c_function "get_indev" {
 	c_call "uint32_t" "nflog_get_indev" { "nflog_data *", "nfad" },
