@@ -19,15 +19,13 @@
 -- THE SOFTWARE.
 
 -- typedefs
-c_source "typedefs" [[
+local typedefs = [[
 typedef struct nflog_handle nflog;
 typedef struct nflog_g_handle nflog_group;
 ]]
+c_source "typedefs" (typedefs)
 -- pass extra C type info to FFI.
-ffi_cdef [[
-typedef struct nflog_handle nflog;
-typedef struct nflog_g_handle nflog_group;
-]]
+ffi_cdef (typedefs)
 
 --
 -- nflog handle
