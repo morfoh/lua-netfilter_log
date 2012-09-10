@@ -18,6 +18,9 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 -- THE SOFTWARE.
 
+basetype "nflog_data *"		"lightuserdata" "NULL"
+basetype "nfgenmsg *"		"lightuserdata" "NULL"
+
 -- typedefs
 local typedefs = [[
 typedef struct nflog_handle nflog;
@@ -130,3 +133,21 @@ object "nflog_group" {
 		c_method_call "int" "nflog_callback_register" { "NFLogFunc", "func", "void *", "func_data" },
   },
 }
+
+-- get the interface that the packet was received through
+c_function "get_indev" {
+	c_call "uint32_t" "nflog_get_indev" { "nflog_data *", "nfad" },
+}
+-- get the physical interface that the packet was received
+c_function "get_physindev" {
+	c_call "uint32_t" "nflog_get_physindev" { "nflog_data *", "nfad" },
+}
+-- gets the interface that the packet will be routed out
+c_function "get_outdev" {
+	c_call "uint32_t" "nflog_get_outdev" { "nflog_data *", "nfad" },
+}
+-- get the physical interface that the packet output
+c_function "get_physoutdev" {
+	c_call "uint32_t" "nflog_get_physoutdev" { "nflog_data *", "nfad" },
+}
+
