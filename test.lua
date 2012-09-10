@@ -2,8 +2,8 @@
 local nf_log = require"netfilter_log"
 
 -- callback function
-local function cb(...)
-	print("nflog_callback():", ...)
+local function cb(gh, nfmsg, nfa, data)
+	print("nflog_callback():", gh, nfmsg, nfa, data)
 	return 0
 end
 
