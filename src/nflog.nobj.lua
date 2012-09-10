@@ -19,15 +19,30 @@
 -- THE SOFTWARE.
 
 -- typedefs
-c_source "typedefs" [[
+local typedefs = [[
 typedef struct nflog_handle nflog;
 typedef struct nflog_g_handle nflog_group;
+typedef struct nfgenmsg nfgenmsg;
+typedef struct nflog_data nflog_data;
 ]]
+c_source "typedefs" (typedefs)
 -- pass extra C type info to FFI.
-ffi_cdef [[
-typedef struct nflog_handle nflog;
-typedef struct nflog_g_handle nflog_group;
-]]
+ffi_cdef (typedefs)
+
+export_definitions {
+-- address families
+"AF_UNSPEC",
+"AF_UNIX",
+"AF_INET",
+"AF_INET6",
+"AF_IPX",
+"AF_NETLINK",
+"AF_PACKET",
+
+"NFULNL_COPY_NONE",
+"NFULNL_COPY_META",
+"NFULNL_COPY_PACKET",
+}
 
 --
 -- nflog handle
@@ -54,7 +69,24 @@ object "nflog" {
   method "fd" {
     c_method_call "int" "nflog_fd" {}
   },
+  method "handle_packet" {
+		var_out{ "int", "rc" },
+		c_source[[
+#define BUF_LEN 4096
+	int fd = nflog_fd(${this});
+	char buf[BUF_LEN];
+
+	${rc} = recv(fd, buf, sizeof(buf), 0);
+	if(${rc} >= 0) {
+		${rc} = nflog_handle_packet(${this}, buf, ${rc});
+	}
+]],
+  },
 }
+
+-- nflog callback type
+callback_type "NFLogFunc" "int"
+	{ "nflog_group *", "gh", "nfgenmsg *", "nfmsg", "nflog_data *", "nfd", "void *", "%data" }
 
 --
 -- nflog group handle
@@ -88,5 +120,13 @@ object "nflog_group" {
 
   method "set_flags" {
     c_method_call "int" "nflog_set_flags" { "uint16_t", "flags" }
+  },
+  method "callback_register" {
+		callback { "NFLogFunc", "func", "func_data", owner = "this",
+			-- code to run if Lua callback function throws an error.
+			c_source[[${ret} = -1;]],
+			ffi_source[[${ret} = -1;]],
+		},
+		c_method_call "int" "nflog_callback_register" { "NFLogFunc", "func", "void *", "func_data" },
   },
 }
