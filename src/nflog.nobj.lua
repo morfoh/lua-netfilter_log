@@ -29,6 +29,21 @@ c_source "typedefs" (typedefs)
 -- pass extra C type info to FFI.
 ffi_cdef (typedefs)
 
+export_definitions {
+-- address families
+"AF_UNSPEC",
+"AF_UNIX",
+"AF_INET",
+"AF_INET6",
+"AF_IPX",
+"AF_NETLINK",
+"AF_PACKET",
+
+"NFULNL_COPY_NONE",
+"NFULNL_COPY_META",
+"NFULNL_COPY_PACKET",
+}
+
 --
 -- nflog handle
 --
