@@ -1,6 +1,12 @@
 
 local nf_log = require"netfilter_log"
 
+-- callback function
+local function cb(...)
+	print("nflog_callback():", ...)
+	return 0
+end
+
 local h = nf_log.nflog();
 
 print("nflog_unbind:",h:unbind_pf(nf_log.AF_INET))
@@ -17,10 +23,7 @@ print("nflog_set_mode:",gh:set_mode(nf_log.NFULNL_COPY_PACKET, 0xffff))
 local fd = h:fd()
 print("fd = ", fd)
 
-print("callback = ", gh:callback_register(function(...)
-	print("nflog_callback():", ...)
-	return 0
-end))
+print("callback = ", gh:callback_register(cb))
 
 -- main loop
 ---[[
