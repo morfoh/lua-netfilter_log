@@ -26,6 +26,7 @@ typedef struct nflog_handle nflog;
 typedef struct nflog_g_handle nflog_group;
 typedef struct nfgenmsg nfgenmsg;
 typedef struct nflog_data nflog_data;
+typedef struct nfulnl_msg_packet_hw nfulnl_msg_packet_hw;
 ]]
 c_source "typedefs" (typedefs)
 -- pass extra C type info to FFI.
@@ -165,4 +166,10 @@ object "nflog_data" {
 	method "get_prefix" {
 		c_method_call "char *" "nflog_get_prefix" {}
 	},
+}
+
+--
+-- nfulnl_msg_packet_hw
+--
+object "nfulnl_msg_packet_hw" {
 }

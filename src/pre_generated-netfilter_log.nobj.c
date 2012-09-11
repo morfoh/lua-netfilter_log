@@ -230,6 +230,7 @@ typedef struct nflog_handle nflog;
 typedef struct nflog_g_handle nflog_group;
 typedef struct nfgenmsg nfgenmsg;
 typedef struct nflog_data nflog_data;
+typedef struct nfulnl_msg_packet_hw nfulnl_msg_packet_hw;
 
 
 
@@ -246,6 +247,9 @@ static obj_type obj_types[] = {
 #define obj_type_id_nflog_data 2
 #define obj_type_nflog_data (obj_types[obj_type_id_nflog_data])
   { NULL, 2, OBJ_TYPE_FLAG_WEAK_REF, "nflog_data" },
+#define obj_type_id_nfulnl_msg_packet_hw 3
+#define obj_type_nfulnl_msg_packet_hw (obj_types[obj_type_id_nfulnl_msg_packet_hw])
+  { NULL, 3, OBJ_TYPE_FLAG_WEAK_REF, "nfulnl_msg_packet_hw" },
   {NULL, -1, 0, NULL},
 };
 
@@ -1251,6 +1255,15 @@ static char *obj_interfaces[] = {
 #define obj_type_nflog_data_push(L, obj, flags) \
 	obj_udata_luapush_weak(L, (void *)obj, &(obj_type_nflog_data), flags)
 
+#define obj_type_nfulnl_msg_packet_hw_check(L, _index) \
+	obj_udata_luacheck(L, _index, &(obj_type_nfulnl_msg_packet_hw))
+#define obj_type_nfulnl_msg_packet_hw_optional(L, _index) \
+	obj_udata_luaoptional(L, _index, &(obj_type_nfulnl_msg_packet_hw))
+#define obj_type_nfulnl_msg_packet_hw_delete(L, _index, flags) \
+	obj_udata_luadelete_weak(L, _index, &(obj_type_nfulnl_msg_packet_hw), flags)
+#define obj_type_nfulnl_msg_packet_hw_push(L, obj, flags) \
+	obj_udata_luapush_weak(L, (void *)obj, &(obj_type_nfulnl_msg_packet_hw), flags)
+
 
 
 
@@ -1427,6 +1440,7 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "typedef struct nflog nflog;\n"
 "typedef struct nflog_group nflog_group;\n"
 "typedef struct nflog_data nflog_data;\n"
+"typedef struct nfulnl_msg_packet_hw nfulnl_msg_packet_hw;\n"
 "\n"
 "]]\n"
 "\n"
@@ -1435,6 +1449,7 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "typedef struct nflog_g_handle nflog_group;\n"
 "typedef struct nfgenmsg nfgenmsg;\n"
 "typedef struct nflog_data nflog_data;\n"
+"typedef struct nfulnl_msg_packet_hw nfulnl_msg_packet_hw;\n"
 "\n"
 "nflog * nflog_open();\n"
 "\n"
@@ -1764,6 +1779,61 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "end\n"
 "\n"
 "\n"
+"local obj_type_nfulnl_msg_packet_hw_check\n"
+"local obj_type_nfulnl_msg_packet_hw_delete\n"
+"local obj_type_nfulnl_msg_packet_hw_push\n"
+"\n"
+"do\n"
+"	local obj_mt, obj_type, obj_ctype = obj_register_ctype(\"nfulnl_msg_packet_hw\", \"nfulnl_msg_packet_hw *\")\n"
+"\n"
+"	function obj_type_nfulnl_msg_packet_hw_check(ptr)\n"
+"		-- if ptr is nil or is the correct type, then just return it.\n"
+"		if not ptr or ffi.istype(obj_ctype, ptr) then return ptr end\n"
+"		-- check if it is a compatible type.\n"
+"		local ctype = tostring(ffi.typeof(ptr))\n"
+"		local bcaster = _obj_subs.nfulnl_msg_packet_hw[ctype]\n"
+"		if bcaster then\n"
+"			return bcaster(ptr)\n"
+"		end\n"
+"		return error(\"Expected 'nfulnl_msg_packet_hw *'\", 2)\n"
+"	end\n"
+"\n"
+"	function obj_type_nfulnl_msg_packet_hw_delete(ptr)\n"
+"		local id = obj_ptr_to_id(ptr)\n"
+"		local flags = nobj_obj_flags[id]\n"
+"		if not flags then return nil, 0 end\n"
+"		ffi.gc(ptr, nil)\n"
+"		nobj_obj_flags[id] = nil\n"
+"		return ptr, flags\n"
+"	end\n"
+"\n"
+"	function obj_type_nfulnl_msg_packet_hw_push(ptr, flags)\n"
+"		local id = obj_ptr_to_id(ptr)\n"
+"		-- check weak refs\n"
+"		if nobj_obj_flags[id] then return nobj_weak_objects[id] end\n"
+"\n"
+"		if flags ~= 0 then\n"
+"			nobj_obj_flags[id] = flags\n"
+"			ffi.gc(ptr, obj_mt.__gc)\n"
+"		end\n", /* ----- CUT ----- */
+"		nobj_weak_objects[id] = ptr\n"
+"		return ptr\n"
+"	end\n"
+"\n"
+"	function obj_mt:__tostring()\n"
+"		return sformat(\"nfulnl_msg_packet_hw: %p, flags=%d\", self, nobj_obj_flags[obj_ptr_to_id(self)] or 0)\n"
+"	end\n"
+"\n"
+"	-- type checking function for C API.\n"
+"	_priv[obj_type] = obj_type_nfulnl_msg_packet_hw_check\n"
+"	-- push function for C API.\n"
+"	reg_table[obj_type] = function(ptr, flags)\n"
+"		return obj_type_nfulnl_msg_packet_hw_push(ffi.cast(obj_ctype,ptr), flags)\n"
+"	end\n"
+"\n"
+"end\n"
+"\n"
+"\n"
 "local obj_type_MutableBuffer_check =\n"
 "	obj_get_interface_check(\"MutableBufferIF\", \"Expected object with MutableBuffer interface\")\n"
 "\n"
@@ -1813,7 +1883,7 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "\n"
 "-- method: fd\n"
 "function _meth.nflog.fd(self)\n"
-"  \n", /* ----- CUT ----- */
+"  \n"
 "  local rc_nflog_fd = 0\n"
 "  rc_nflog_fd = C.nflog_fd(self)\n"
 "  return rc_nflog_fd\n"
@@ -1990,6 +2060,12 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "_push.nflog_data = obj_type_nflog_data_push\n"
 "ffi.metatype(\"nflog_data\", _priv.nflog_data)\n"
 "-- End \"nflog_data\" FFI interface\n"
+"\n"
+"\n"
+"-- Start \"nfulnl_msg_packet_hw\" FFI interface\n"
+"_push.nfulnl_msg_packet_hw = obj_type_nfulnl_msg_packet_hw_push\n"
+"ffi.metatype(\"nfulnl_msg_packet_hw\", _priv.nfulnl_msg_packet_hw)\n"
+"-- End \"nfulnl_msg_packet_hw\" FFI interface\n"
 "\n", NULL };
 
 /* callback object: callback_state */
@@ -2386,6 +2462,36 @@ static const reg_impl obj_nflog_data_implements[] = {
   {NULL, NULL}
 };
 
+static const luaL_reg obj_nfulnl_msg_packet_hw_pub_funcs[] = {
+  {NULL, NULL}
+};
+
+static const luaL_reg obj_nfulnl_msg_packet_hw_methods[] = {
+  {NULL, NULL}
+};
+
+static const luaL_reg obj_nfulnl_msg_packet_hw_metas[] = {
+  {"__tostring", obj_udata_default_tostring},
+  {"__eq", obj_udata_default_equal},
+  {NULL, NULL}
+};
+
+static const obj_base obj_nfulnl_msg_packet_hw_bases[] = {
+  {-1, NULL}
+};
+
+static const obj_field obj_nfulnl_msg_packet_hw_fields[] = {
+  {NULL, 0, 0, 0}
+};
+
+static const obj_const obj_nfulnl_msg_packet_hw_constants[] = {
+  {NULL, NULL, 0.0 , 0}
+};
+
+static const reg_impl obj_nfulnl_msg_packet_hw_implements[] = {
+  {NULL, NULL}
+};
+
 static const luaL_reg netfilter_log_function[] = {
   {NULL, NULL}
 };
@@ -2430,6 +2536,7 @@ static const reg_sub_module reg_sub_modules[] = {
   { &(obj_type_nflog), REG_OBJECT, obj_nflog_pub_funcs, obj_nflog_methods, obj_nflog_metas, obj_nflog_bases, obj_nflog_fields, obj_nflog_constants, obj_nflog_implements, 0},
   { &(obj_type_nflog_group), REG_OBJECT, obj_nflog_group_pub_funcs, obj_nflog_group_methods, obj_nflog_group_metas, obj_nflog_group_bases, obj_nflog_group_fields, obj_nflog_group_constants, obj_nflog_group_implements, 0},
   { &(obj_type_nflog_data), REG_OBJECT, obj_nflog_data_pub_funcs, obj_nflog_data_methods, obj_nflog_data_metas, obj_nflog_data_bases, obj_nflog_data_fields, obj_nflog_data_constants, obj_nflog_data_implements, 0},
+  { &(obj_type_nfulnl_msg_packet_hw), REG_OBJECT, obj_nfulnl_msg_packet_hw_pub_funcs, obj_nfulnl_msg_packet_hw_methods, obj_nfulnl_msg_packet_hw_metas, obj_nfulnl_msg_packet_hw_bases, obj_nfulnl_msg_packet_hw_fields, obj_nfulnl_msg_packet_hw_constants, obj_nfulnl_msg_packet_hw_implements, 0},
   {NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0}
 };
 
