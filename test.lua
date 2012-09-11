@@ -30,8 +30,8 @@ print("nflog_bind:",h:bind_pf(nf_log.AF_INET))
 
 local gh0 = nf_log.nflog_group(h, 0)
 print("gh0 = ", gh0)
-local gh100 = nf_log.nflog_group(h, 100)
-print("gh100 = ", gh100)
+local gh1 = nf_log.nflog_group(h, 1)
+print("gh1 = ", gh1)
 
 print("nflog_set_mode:",gh0:set_mode(nf_log.NFULNL_COPY_PACKET, 0xffff))
 
@@ -49,7 +49,7 @@ until rc < 0
 --]]
 
 print("nflog_unbind from group 0:",gh0:unbind())
-print("nflog_unbind from group 100:",gh100:unbind())
+print("nflog_unbind from group 1:",gh1:unbind())
 
 print("nflog_close:", h:close())
 
