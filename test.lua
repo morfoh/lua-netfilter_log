@@ -3,12 +3,14 @@ local nf_log = require"netfilter_log"
 
 -- print packet information
 local function print_pkt(ldata)
+	local nfmark = nf_log.get_nfmark(ldata)
 	local hwtype = nf_log.get_hwtype(ldata)
 	local indev = nf_log.get_indev(ldata)
 	local physindev = nf_log.get_physindev(ldata)
 	local outdev = nf_log.get_outdev(ldata)
 	local physoutdev = nf_log.get_physoutdev(ldata)
 	io.write("print_pkt(): ")
+	io.write("nfmark=", nfmark .. " ")
 	io.write("hwtype=", hwtype .. " ")
 	io.write("indev=", indev .. " ")
 	io.write("physindev=", physindev .. " ")
