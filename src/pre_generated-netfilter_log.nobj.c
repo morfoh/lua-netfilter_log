@@ -1480,6 +1480,8 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "\n"
 "uint16_t nflog_get_hwtype(nflog_data *);\n"
 "\n"
+"uint16_t nflog_get_msg_packet_hwhdrlen(nflog_data *);\n"
+"\n"
 "uint32_t nflog_get_nfmark(nflog_data *);\n"
 "\n"
 "uint32_t nflog_get_indev(nflog_data *);\n"
@@ -1812,10 +1814,10 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "		-- check weak refs\n"
 "		if nobj_obj_flags[id] then return nobj_weak_objects[id] end\n"
 "\n"
-"		if flags ~= 0 then\n"
+"		if flags ~= 0 then\n", /* ----- CUT ----- */
 "			nobj_obj_flags[id] = flags\n"
 "			ffi.gc(ptr, obj_mt.__gc)\n"
-"		end\n", /* ----- CUT ----- */
+"		end\n"
 "		nobj_weak_objects[id] = ptr\n"
 "		return ptr\n"
 "	end\n"
@@ -2007,6 +2009,14 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "  local rc_nflog_get_hwtype = 0\n"
 "  rc_nflog_get_hwtype = C.nflog_get_hwtype(self)\n"
 "  return rc_nflog_get_hwtype\n"
+"end\n"
+"\n"
+"-- method: get_msg_packet_hwhdrlen\n"
+"function _meth.nflog_data.get_msg_packet_hwhdrlen(self)\n"
+"  \n"
+"  local rc_nflog_get_msg_packet_hwhdrlen = 0\n"
+"  rc_nflog_get_msg_packet_hwhdrlen = C.nflog_get_msg_packet_hwhdrlen(self)\n"
+"  return rc_nflog_get_msg_packet_hwhdrlen\n"
 "end\n"
 "\n"
 "-- method: get_nfmark\n"
@@ -2287,6 +2297,16 @@ static int nflog_data__get_hwtype__meth(lua_State *L) {
   return 1;
 }
 
+/* method: get_msg_packet_hwhdrlen */
+static int nflog_data__get_msg_packet_hwhdrlen__meth(lua_State *L) {
+  nflog_data * this;
+  uint16_t rc_nflog_get_msg_packet_hwhdrlen = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_msg_packet_hwhdrlen = nflog_get_msg_packet_hwhdrlen(this);
+  lua_pushinteger(L, rc_nflog_get_msg_packet_hwhdrlen);
+  return 1;
+}
+
 /* method: get_nfmark */
 static int nflog_data__get_nfmark__meth(lua_State *L) {
   nflog_data * this;
@@ -2431,6 +2451,7 @@ static const luaL_reg obj_nflog_data_pub_funcs[] = {
 
 static const luaL_reg obj_nflog_data_methods[] = {
   {"get_hwtype", nflog_data__get_hwtype__meth},
+  {"get_msg_packet_hwhdrlen", nflog_data__get_msg_packet_hwhdrlen__meth},
   {"get_nfmark", nflog_data__get_nfmark__meth},
   {"get_indev", nflog_data__get_indev__meth},
   {"get_physindev", nflog_data__get_physindev__meth},

@@ -11,6 +11,7 @@ local function print_pkt(ldata)
 	io.write("physindev=", ldata:get_physindev() .. " ")
 	io.write("outdev=", ldata:get_outdev() .. " ")
 	io.write("physoutdev=", ldata:get_physoutdev() .. " ")
+	io.write("hwhdrlen=", ldata:get_msg_packet_hwhdrlen() .. " ")
 	io.write("\n")
 end
 

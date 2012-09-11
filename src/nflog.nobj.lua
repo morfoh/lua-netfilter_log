@@ -142,6 +142,10 @@ object "nflog_data" {
 	method "get_hwtype" {
 		c_method_call "uint16_t" "nflog_get_hwtype" {}
 	},
+	-- get the length of the hardware link layer header
+	method "get_msg_packet_hwhdrlen" {
+		c_method_call "uint16_t" "nflog_get_msg_packet_hwhdrlen" {}
+	},
 	-- get the packet mark
 	method "get_nfmark" {
 		c_method_call "uint32_t" "nflog_get_nfmark" {}
