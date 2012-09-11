@@ -3,21 +3,14 @@ local nf_log = require"netfilter_log"
 
 -- print packet information
 local function print_pkt(ldata)
-	local nfmark = nf_log.get_nfmark(ldata)
-	local prefix = nf_log.get_prefix(ldata)
-	local hwtype = nf_log.get_hwtype(ldata)
-	local indev = nf_log.get_indev(ldata)
-	local physindev = nf_log.get_physindev(ldata)
-	local outdev = nf_log.get_outdev(ldata)
-	local physoutdev = nf_log.get_physoutdev(ldata)
 	io.write("print_pkt(): ")
-	io.write("nfmark=", nfmark .. " ")
-	io.write("prefix=", prefix .. " ")
-	io.write("hwtype=", hwtype .. " ")
-	io.write("indev=", indev .. " ")
-	io.write("physindev=", physindev .. " ")
-	io.write("outdev=", outdev .. " ")
-	io.write("physoutdev=", physoutdev .. " ")
+	io.write("nfmark=", ldata:get_nfmark() .. " ")
+	io.write("prefix=", ldata:get_prefix() .. " ")
+	io.write("hwtype=", ldata:get_hwtype() .. " ")
+	io.write("indev=", ldata:get_indev() .. " ")
+	io.write("physindev=", ldata:get_physindev() .. " ")
+	io.write("outdev=", ldata:get_outdev() .. " ")
+	io.write("physoutdev=", ldata:get_physoutdev() .. " ")
 	io.write("\n")
 end
 
