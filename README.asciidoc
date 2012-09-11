@@ -65,6 +65,47 @@ curl -O "https://github.com/morfoh/lua-netfilter_log/raw/master/lua-netfilter_lo
 luarocks install lua-netfilter_log-scm-0.rockspec
 -----------------------------------------------------------------------------
 
+Simple Test
+-----------
+
+log all incoming ICMP
+-----------------------------------------------------------------------------
+iptables -A INPUT --protocol icmp -j NFLOG --nflog-group 0 --nflog-prefix="icmp-in"
+-----------------------------------------------------------------------------
+
+log all outgoing ICMP
+-----------------------------------------------------------------------------
+iptables -A OUTPUT --protocol icmp -j NFLOG --nflog-group 1 --nflog-prefix="icmp-out"
+-----------------------------------------------------------------------------
+
+run the test as superuser
+-----------------------------------------------------------------------------
+sudo lua test.lua 
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+nflog_unbind:   0
+nflog_bind:     0
+gh0 =   nflog_group: 0x8a28438, flags=1
+gh1 =   nflog_group: 0x8a28568, flags=1
+nflog_set_mode: 0
+fd =    3
+gh0:callback =  0
+gh1:callback =  0
+-----------------------------------------------------------------------------
+
+If you are going to use `ping` to send ICMP echo packets to some host, you
+should see log output similar to the following.
+
+example log output
+-----------------------------------------------------------------------------
+nflog_callback():       nflog_group: 0x8a28568, flags=1 userdata: 0xbf9e45cc    nflog_data: 0xbf9e447c, flags=0 nil
+print_pkt(): nfmark=0 prefix=icmp-out hwtype=0 indev=0 physindev=0 outdev=3 physoutdev=0 hwhdrlen=0 
+handle_packet(): rc=    0
+nflog_callback():       nflog_group: 0x8a28438, flags=1 userdata: 0xbf9e45cc    nflog_data: 0xbf9e447c, flags=0 nil
+print_pkt(): nfmark=0 prefix=icmp-in hwtype=1 indev=3 physindev=0 outdev=0 physoutdev=0 hwhdrlen=14 
+handle_packet(): rc=    0
+-----------------------------------------------------------------------------
+
 
 Development
 -----------
