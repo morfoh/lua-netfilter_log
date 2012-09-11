@@ -18,8 +18,9 @@
 #define LUAJIT_FFI 1
 
 
-#include "sys/types.h"
-#include "libnetfilter_log/libnetfilter_log.h"
+#include <sys/types.h>
+#include <netdb.h>
+#include <libnetfilter_log/libnetfilter_log.h>
 
 
 
@@ -227,9 +228,12 @@ typedef struct ffi_export_symbol {
 
 typedef struct nflog_handle nflog;
 typedef struct nflog_g_handle nflog_group;
+typedef struct nfgenmsg nfgenmsg;
+typedef struct nflog_data nflog_data;
 
 
 
+static int nflog_group_func_cb(nflog_group * gh, nfgenmsg * nfmsg, nflog_data * nfd, void * data);
 
 
 static obj_type obj_types[] = {
@@ -239,6 +243,9 @@ static obj_type obj_types[] = {
 #define obj_type_id_nflog_group 1
 #define obj_type_nflog_group (obj_types[obj_type_id_nflog_group])
   { NULL, 1, OBJ_TYPE_FLAG_WEAK_REF, "nflog_group" },
+#define obj_type_id_nflog_data 2
+#define obj_type_nflog_data (obj_types[obj_type_id_nflog_data])
+  { NULL, 2, OBJ_TYPE_FLAG_WEAK_REF, "nflog_data" },
   {NULL, -1, 0, NULL},
 };
 
@@ -1141,6 +1148,74 @@ static FUNC_UNUSED int lua_checktype_ref(lua_State *L, int _index, int _type) {
 	return luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
+/* use static pointer as key to weak callback_state table. */
+static char obj_callback_state_weak_ref_key[] = "obj_callback_state_weak_ref_key";
+
+static FUNC_UNUSED void *nobj_get_callback_state(lua_State *L, int owner_idx, int size) {
+	void *cb_state;
+
+	lua_pushlightuserdata(L, obj_callback_state_weak_ref_key); /* key for weak table. */
+	lua_rawget(L, LUA_REGISTRYINDEX);  /* check if weak table exists already. */
+	if(lua_isnil(L, -1)) {
+		lua_pop(L, 1); /* pop nil. */
+		/* create weak table for callback_state */
+		lua_newtable(L);               /* weak table. */
+		lua_newtable(L);               /* metatable for weak table. */
+		lua_pushliteral(L, "__mode");
+		lua_pushliteral(L, "k");
+		lua_rawset(L, -3);             /* metatable.__mode = 'k'  weak keys. */
+		lua_setmetatable(L, -2);       /* add metatable to weak table. */
+		lua_pushlightuserdata(L, obj_callback_state_weak_ref_key); /* key for weak table. */
+		lua_pushvalue(L, -2);          /* dup weak table. */
+		lua_rawset(L, LUA_REGISTRYINDEX);  /* add weak table to registry. */
+	}
+
+	/* check weak table for callback_state. */
+	lua_pushvalue(L, owner_idx); /* dup. owner as lookup key. */
+	lua_rawget(L, -2);
+	if(lua_isnil(L, -1)) {
+		lua_pop(L, 1); /* pop nil. */
+		lua_pushvalue(L, owner_idx); /* dup. owner as lookup key. */
+		/* create new callback state. */
+		cb_state = lua_newuserdata(L, size);
+		lua_rawset(L, -3);
+		lua_pop(L, 1); /* pop <weak table> */
+	} else {
+		/* got existing callback state. */
+		cb_state = lua_touserdata(L, -1);
+		lua_pop(L, 2); /* pop <weak table>, <callback_state> */
+	}
+
+	return cb_state;
+}
+
+static FUNC_UNUSED void *nobj_delete_callback_state(lua_State *L, int owner_idx) {
+	void *cb_state = NULL;
+
+	lua_pushlightuserdata(L, obj_callback_state_weak_ref_key); /* key for weak table. */
+	lua_rawget(L, LUA_REGISTRYINDEX);  /* check if weak table exists already. */
+	if(lua_isnil(L, -1)) {
+		lua_pop(L, 1); /* pop nil.  no weak table, so there is no callback state. */
+		return NULL;
+	}
+	/* get callback state. */
+	lua_pushvalue(L, owner_idx); /* dup. owner */
+	lua_rawget(L, -2);
+	if(lua_isnil(L, -1)) {
+		lua_pop(L, 2); /* pop <weak table>, nil.  No callback state for the owner. */
+	} else {
+		cb_state = lua_touserdata(L, -1);
+		lua_pop(L, 1); /* pop <state> */
+		/* remove callback state. */
+		lua_pushvalue(L, owner_idx); /* dup. owner */
+		lua_pushnil(L);
+		lua_rawset(L, -3);
+		lua_pop(L, 1); /* pop <weak table> */
+	}
+
+	return cb_state;
+}
+
 
 
 static char *obj_interfaces[] = {
@@ -1166,6 +1241,15 @@ static char *obj_interfaces[] = {
 	obj_udata_luadelete_weak(L, _index, &(obj_type_nflog_group), flags)
 #define obj_type_nflog_group_push(L, obj, flags) \
 	obj_udata_luapush_weak(L, (void *)obj, &(obj_type_nflog_group), flags)
+
+#define obj_type_nflog_data_check(L, _index) \
+	obj_udata_luacheck(L, _index, &(obj_type_nflog_data))
+#define obj_type_nflog_data_optional(L, _index) \
+	obj_udata_luaoptional(L, _index, &(obj_type_nflog_data))
+#define obj_type_nflog_data_delete(L, _index, flags) \
+	obj_udata_luadelete_weak(L, _index, &(obj_type_nflog_data), flags)
+#define obj_type_nflog_data_push(L, obj, flags) \
+	obj_udata_luapush_weak(L, (void *)obj, &(obj_type_nflog_data), flags)
 
 
 
@@ -1342,12 +1426,15 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "ffi.cdef[[\n"
 "typedef struct nflog nflog;\n"
 "typedef struct nflog_group nflog_group;\n"
+"typedef struct nflog_data nflog_data;\n"
 "\n"
 "]]\n"
 "\n"
 "ffi.cdef[[\n"
 "typedef struct nflog_handle nflog;\n"
 "typedef struct nflog_g_handle nflog_group;\n"
+"typedef struct nfgenmsg nfgenmsg;\n"
+"typedef struct nflog_data nflog_data;\n"
 "\n"
 "nflog * nflog_open();\n"
 "\n"
@@ -1359,6 +1446,7 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "\n"
 "int nflog_fd(nflog *);\n"
 "\n"
+"typedef int (*NFLogFunc)(nflog_group * gh, nfgenmsg * nfmsg, nflog_data * nfd, void * data);\n"
 "nflog_group * nflog_bind_group(nflog *, uint16_t);\n"
 "\n"
 "int nflog_unbind_group(nflog_group *);\n"
@@ -1372,6 +1460,22 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "int nflog_set_nlbufsiz(nflog_group *, uint32_t);\n"
 "\n"
 "int nflog_set_flags(nflog_group *, uint16_t);\n"
+"\n"
+"int nflog_callback_register(nflog_group *, NFLogFunc, void *);\n"
+"\n"
+"uint16_t nflog_get_hwtype(nflog_data *);\n"
+"\n"
+"uint32_t nflog_get_nfmark(nflog_data *);\n"
+"\n"
+"uint32_t nflog_get_indev(nflog_data *);\n"
+"\n"
+"uint32_t nflog_get_physindev(nflog_data *);\n"
+"\n"
+"uint32_t nflog_get_outdev(nflog_data *);\n"
+"\n"
+"uint32_t nflog_get_physoutdev(nflog_data *);\n"
+"\n"
+"char * nflog_get_prefix(nflog_data *);\n"
 "\n"
 "\n"
 "]]\n"
@@ -1605,6 +1709,61 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "end\n"
 "\n"
 "\n"
+"local obj_type_nflog_data_check\n"
+"local obj_type_nflog_data_delete\n"
+"local obj_type_nflog_data_push\n"
+"\n"
+"do\n"
+"	local obj_mt, obj_type, obj_ctype = obj_register_ctype(\"nflog_data\", \"nflog_data *\")\n"
+"\n"
+"	function obj_type_nflog_data_check(ptr)\n"
+"		-- if ptr is nil or is the correct type, then just return it.\n"
+"		if not ptr or ffi.istype(obj_ctype, ptr) then return ptr end\n"
+"		-- check if it is a compatible type.\n"
+"		local ctype = tostring(ffi.typeof(ptr))\n"
+"		local bcaster = _obj_subs.nflog_data[ctype]\n"
+"		if bcaster then\n"
+"			return bcaster(ptr)\n"
+"		end\n"
+"		return error(\"Expected 'nflog_data *'\", 2)\n"
+"	end\n"
+"\n"
+"	function obj_type_nflog_data_delete(ptr)\n"
+"		local id = obj_ptr_to_id(ptr)\n"
+"		local flags = nobj_obj_flags[id]\n"
+"		if not flags then return nil, 0 end\n"
+"		ffi.gc(ptr, nil)\n"
+"		nobj_obj_flags[id] = nil\n"
+"		return ptr, flags\n"
+"	end\n"
+"\n"
+"	function obj_type_nflog_data_push(ptr, flags)\n"
+"		local id = obj_ptr_to_id(ptr)\n"
+"		-- check weak refs\n"
+"		if nobj_obj_flags[id] then return nobj_weak_objects[id] end\n"
+"\n"
+"		if flags ~= 0 then\n"
+"			nobj_obj_flags[id] = flags\n"
+"			ffi.gc(ptr, obj_mt.__gc)\n"
+"		end\n"
+"		nobj_weak_objects[id] = ptr\n"
+"		return ptr\n"
+"	end\n"
+"\n"
+"	function obj_mt:__tostring()\n"
+"		return sformat(\"nflog_data: %p, flags=%d\", self, nobj_obj_flags[obj_ptr_to_id(self)] or 0)\n"
+"	end\n"
+"\n"
+"	-- type checking function for C API.\n"
+"	_priv[obj_type] = obj_type_nflog_data_check\n"
+"	-- push function for C API.\n"
+"	reg_table[obj_type] = function(ptr, flags)\n"
+"		return obj_type_nflog_data_push(ffi.cast(obj_ctype,ptr), flags)\n"
+"	end\n"
+"\n"
+"end\n"
+"\n"
+"\n"
 "local obj_type_MutableBuffer_check =\n"
 "	obj_get_interface_check(\"MutableBufferIF\", \"Expected object with MutableBuffer interface\")\n"
 "\n"
@@ -1654,7 +1813,7 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "\n"
 "-- method: fd\n"
 "function _meth.nflog.fd(self)\n"
-"  \n"
+"  \n", /* ----- CUT ----- */
 "  local rc_nflog_fd = 0\n"
 "  rc_nflog_fd = C.nflog_fd(self)\n"
 "  return rc_nflog_fd\n"
@@ -1666,6 +1825,19 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "\n"
 "\n"
 "-- Start \"nflog_group\" FFI interface\n"
+"-- callback: func\n"
+"local nflog_group_func_cb = ffi.cast(\"NFLogFunc\",function (gh, nfmsg, nfd, data)\n"
+"  local wrap = nobj_callback_states[obj_ptr_to_id(data)]\n"
+"  local status, ret = pcall(wrap.func, obj_type_nflog_group_push(gh, 0), nfmsg, obj_type_nflog_data_push(nfd, 0))\n"
+"  if not status then\n"
+"ret = -1;\n"
+"    print(\"CALLBACK Error:\", ret)\n"
+"    return ret\n"
+"  end\n"
+"  ret = ret or 0\n"
+"  return ret\n"
+"end)\n"
+"\n"
 "-- method: new\n"
 "function _pub.nflog_group.new(nflog_handle, num)\n"
 "  \n"
@@ -1682,7 +1854,9 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "  local self,this_flags = obj_type_nflog_group_delete(self)\n"
 "  if not self then return end\n"
 "  local rc_nflog_unbind_group = 0\n"
+"  local id = obj_ptr_to_id(self)\n"
 "  rc_nflog_unbind_group = C.nflog_unbind_group(self)\n"
+"  nobj_callback_states[id] = nil\n"
 "  return rc_nflog_unbind_group\n"
 "end\n"
 "_priv.nflog_group.__gc = _meth.nflog_group.unbind\n"
@@ -1733,10 +1907,96 @@ static const char *netfilter_log_ffi_lua_code[] = { "local ffi=require\"ffi\"\n"
 "  return rc_nflog_set_flags\n"
 "end\n"
 "\n"
+"-- method: callback_register\n"
+"function _meth.nflog_group.callback_register(self, func)\n"
+"  \n"
+"  local func_data\n"
+"  local rc_nflog_callback_register = 0\n"
+"  local id = obj_ptr_to_id(self)\n"
+"  local wrap = nobj_callback_states[id]\n"
+"  if not wrap then\n"
+"    wrap = {}\n"
+"    nobj_callback_states[id] = wrap\n"
+"  end\n"
+"  func_data = self\n"
+"  wrap.func = func\n"
+"  func = nflog_group_func_cb\n"
+"  rc_nflog_callback_register = C.nflog_callback_register(self, func, func_data)\n"
+"  return rc_nflog_callback_register\n"
+"end\n"
+"\n"
 "_push.nflog_group = obj_type_nflog_group_push\n"
 "ffi.metatype(\"nflog_group\", _priv.nflog_group)\n"
 "-- End \"nflog_group\" FFI interface\n"
+"\n"
+"\n"
+"-- Start \"nflog_data\" FFI interface\n"
+"-- method: get_hwtype\n"
+"function _meth.nflog_data.get_hwtype(self)\n"
+"  \n"
+"  local rc_nflog_get_hwtype = 0\n"
+"  rc_nflog_get_hwtype = C.nflog_get_hwtype(self)\n"
+"  return rc_nflog_get_hwtype\n"
+"end\n"
+"\n"
+"-- method: get_nfmark\n"
+"function _meth.nflog_data.get_nfmark(self)\n"
+"  \n"
+"  local rc_nflog_get_nfmark = 0\n"
+"  rc_nflog_get_nfmark = C.nflog_get_nfmark(self)\n"
+"  return rc_nflog_get_nfmark\n"
+"end\n"
+"\n"
+"-- method: get_indev\n"
+"function _meth.nflog_data.get_indev(self)\n"
+"  \n"
+"  local rc_nflog_get_indev = 0\n"
+"  rc_nflog_get_indev = C.nflog_get_indev(self)\n"
+"  return rc_nflog_get_indev\n"
+"end\n"
+"\n"
+"-- method: get_physindev\n"
+"function _meth.nflog_data.get_physindev(self)\n"
+"  \n"
+"  local rc_nflog_get_physindev = 0\n"
+"  rc_nflog_get_physindev = C.nflog_get_physindev(self)\n"
+"  return rc_nflog_get_physindev\n"
+"end\n"
+"\n"
+"-- method: get_outdev\n"
+"function _meth.nflog_data.get_outdev(self)\n"
+"  \n"
+"  local rc_nflog_get_outdev = 0\n"
+"  rc_nflog_get_outdev = C.nflog_get_outdev(self)\n"
+"  return rc_nflog_get_outdev\n"
+"end\n"
+"\n"
+"-- method: get_physoutdev\n"
+"function _meth.nflog_data.get_physoutdev(self)\n"
+"  \n"
+"  local rc_nflog_get_physoutdev = 0\n"
+"  rc_nflog_get_physoutdev = C.nflog_get_physoutdev(self)\n"
+"  return rc_nflog_get_physoutdev\n"
+"end\n"
+"\n"
+"-- method: get_prefix\n"
+"function _meth.nflog_data.get_prefix(self)\n"
+"  \n"
+"  local rc_nflog_get_prefix\n"
+"  rc_nflog_get_prefix = C.nflog_get_prefix(self)\n"
+"  return ffi_string(rc_nflog_get_prefix)\n"
+"end\n"
+"\n"
+"_push.nflog_data = obj_type_nflog_data_push\n"
+"ffi.metatype(\"nflog_data\", _priv.nflog_data)\n"
+"-- End \"nflog_data\" FFI interface\n"
 "\n", NULL };
+
+/* callback object: callback_state */
+typedef struct {
+  lua_State *L;
+  int func;
+} nflog_group_cb_state;
 
 
 /* method: new */
@@ -1794,6 +2054,24 @@ static int nflog__fd__meth(lua_State *L) {
   return 1;
 }
 
+/* method: handle_packet */
+static int nflog__handle_packet__meth(lua_State *L) {
+  nflog * this;
+  int rc = 0;
+  this = obj_type_nflog_check(L,1);
+#define BUF_LEN 4096
+	int fd = nflog_fd(this);
+	char buf[BUF_LEN];
+
+	rc = recv(fd, buf, sizeof(buf), 0);
+	if(rc >= 0) {
+		rc = nflog_handle_packet(this, buf, rc);
+	}
+
+  lua_pushinteger(L, rc);
+  return 1;
+}
+
 /* method: new */
 static int nflog_group__new__meth(lua_State *L) {
   nflog * nflog_handle;
@@ -1809,11 +2087,16 @@ static int nflog_group__new__meth(lua_State *L) {
 
 /* method: unbind */
 static int nflog_group__unbind__meth(lua_State *L) {
+  nflog_group_cb_state *wrap;
   int this_flags = 0;
   nflog_group * this;
   int rc_nflog_unbind_group = 0;
   this = obj_type_nflog_group_delete(L,1,&(this_flags));
   if(!(this_flags & OBJ_UDATA_FLAG_OWN)) { return 0; }
+  wrap = nobj_delete_callback_state(L, 1);
+  if(wrap) {
+  luaL_unref(L, LUA_REGISTRYINDEX, wrap->func);
+  }
   rc_nflog_unbind_group = nflog_unbind_group(this);
   lua_pushinteger(L, rc_nflog_unbind_group);
   return 1;
@@ -1881,6 +2164,113 @@ static int nflog_group__set_flags__meth(lua_State *L) {
   return 1;
 }
 
+/* method: callback_register */
+static int nflog_group__callback_register__meth(lua_State *L) {
+  nflog_group_cb_state *wrap;
+  nflog_group * this;
+  void * func_data = NULL;
+  int rc_nflog_callback_register = 0;
+  wrap = nobj_get_callback_state(L, 1, sizeof(nflog_group_cb_state));
+  wrap->L = L;
+  func_data = wrap;
+  this = obj_type_nflog_group_check(L,1);
+  wrap->func = lua_checktype_ref(L, 2, LUA_TFUNCTION);
+  rc_nflog_callback_register = nflog_callback_register(this, nflog_group_func_cb, func_data);
+  lua_pushinteger(L, rc_nflog_callback_register);
+  return 1;
+}
+
+/* callback: func */
+static int nflog_group_func_cb(nflog_group * gh, nfgenmsg * nfmsg, nflog_data * nfd, void * data) {
+  nflog_group_cb_state * wrap = (nflog_group_cb_state *)data;
+  lua_State *L = wrap->L;
+  int ret = 0;
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, wrap->func);
+  obj_type_nflog_group_push(L, gh, 0);
+  lua_pushlightuserdata(L, nfmsg);
+  obj_type_nflog_data_push(L, nfd, 0);
+  if(lua_pcall(L, 3, 1, 0)) {
+ret = -1;
+    fprintf(stdout, "CALLBACK Error: %s\n", lua_tostring(L, -1));
+    lua_pop(L, 1);
+    return ret;
+  }
+  ret = lua_tointeger(L,-1);
+  lua_pop(L, 1);
+  return ret;
+}
+
+/* method: get_hwtype */
+static int nflog_data__get_hwtype__meth(lua_State *L) {
+  nflog_data * this;
+  uint16_t rc_nflog_get_hwtype = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_hwtype = nflog_get_hwtype(this);
+  lua_pushinteger(L, rc_nflog_get_hwtype);
+  return 1;
+}
+
+/* method: get_nfmark */
+static int nflog_data__get_nfmark__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t rc_nflog_get_nfmark = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_nfmark = nflog_get_nfmark(this);
+  lua_pushinteger(L, rc_nflog_get_nfmark);
+  return 1;
+}
+
+/* method: get_indev */
+static int nflog_data__get_indev__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t rc_nflog_get_indev = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_indev = nflog_get_indev(this);
+  lua_pushinteger(L, rc_nflog_get_indev);
+  return 1;
+}
+
+/* method: get_physindev */
+static int nflog_data__get_physindev__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t rc_nflog_get_physindev = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_physindev = nflog_get_physindev(this);
+  lua_pushinteger(L, rc_nflog_get_physindev);
+  return 1;
+}
+
+/* method: get_outdev */
+static int nflog_data__get_outdev__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t rc_nflog_get_outdev = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_outdev = nflog_get_outdev(this);
+  lua_pushinteger(L, rc_nflog_get_outdev);
+  return 1;
+}
+
+/* method: get_physoutdev */
+static int nflog_data__get_physoutdev__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t rc_nflog_get_physoutdev = 0;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_physoutdev = nflog_get_physoutdev(this);
+  lua_pushinteger(L, rc_nflog_get_physoutdev);
+  return 1;
+}
+
+/* method: get_prefix */
+static int nflog_data__get_prefix__meth(lua_State *L) {
+  nflog_data * this;
+  char * rc_nflog_get_prefix = NULL;
+  this = obj_type_nflog_data_check(L,1);
+  rc_nflog_get_prefix = nflog_get_prefix(this);
+  lua_pushstring(L, rc_nflog_get_prefix);
+  return 1;
+}
+
 
 
 static const luaL_reg obj_nflog_pub_funcs[] = {
@@ -1893,6 +2283,7 @@ static const luaL_reg obj_nflog_methods[] = {
   {"bind_pf", nflog__bind_pf__meth},
   {"unbind_pf", nflog__unbind_pf__meth},
   {"fd", nflog__fd__meth},
+  {"handle_packet", nflog__handle_packet__meth},
   {NULL, NULL}
 };
 
@@ -1931,6 +2322,7 @@ static const luaL_reg obj_nflog_group_methods[] = {
   {"set_qtresh", nflog_group__set_qtresh__meth},
   {"set_nlbufsiz", nflog_group__set_nlbufsiz__meth},
   {"set_flags", nflog_group__set_flags__meth},
+  {"callback_register", nflog_group__callback_register__meth},
   {NULL, NULL}
 };
 
@@ -1957,11 +2349,78 @@ static const reg_impl obj_nflog_group_implements[] = {
   {NULL, NULL}
 };
 
+static const luaL_reg obj_nflog_data_pub_funcs[] = {
+  {NULL, NULL}
+};
+
+static const luaL_reg obj_nflog_data_methods[] = {
+  {"get_hwtype", nflog_data__get_hwtype__meth},
+  {"get_nfmark", nflog_data__get_nfmark__meth},
+  {"get_indev", nflog_data__get_indev__meth},
+  {"get_physindev", nflog_data__get_physindev__meth},
+  {"get_outdev", nflog_data__get_outdev__meth},
+  {"get_physoutdev", nflog_data__get_physoutdev__meth},
+  {"get_prefix", nflog_data__get_prefix__meth},
+  {NULL, NULL}
+};
+
+static const luaL_reg obj_nflog_data_metas[] = {
+  {"__tostring", obj_udata_default_tostring},
+  {"__eq", obj_udata_default_equal},
+  {NULL, NULL}
+};
+
+static const obj_base obj_nflog_data_bases[] = {
+  {-1, NULL}
+};
+
+static const obj_field obj_nflog_data_fields[] = {
+  {NULL, 0, 0, 0}
+};
+
+static const obj_const obj_nflog_data_constants[] = {
+  {NULL, NULL, 0.0 , 0}
+};
+
+static const reg_impl obj_nflog_data_implements[] = {
+  {NULL, NULL}
+};
+
 static const luaL_reg netfilter_log_function[] = {
   {NULL, NULL}
 };
 
 static const obj_const netfilter_log_constants[] = {
+#ifdef AF_INET6
+  {"AF_INET6", NULL, AF_INET6, CONST_NUMBER},
+#endif
+#ifdef NFULNL_COPY_NONE
+  {"NFULNL_COPY_NONE", NULL, NFULNL_COPY_NONE, CONST_NUMBER},
+#endif
+#ifdef AF_IPX
+  {"AF_IPX", NULL, AF_IPX, CONST_NUMBER},
+#endif
+#ifdef AF_NETLINK
+  {"AF_NETLINK", NULL, AF_NETLINK, CONST_NUMBER},
+#endif
+#ifdef AF_PACKET
+  {"AF_PACKET", NULL, AF_PACKET, CONST_NUMBER},
+#endif
+#ifdef AF_INET
+  {"AF_INET", NULL, AF_INET, CONST_NUMBER},
+#endif
+#ifdef NFULNL_COPY_PACKET
+  {"NFULNL_COPY_PACKET", NULL, NFULNL_COPY_PACKET, CONST_NUMBER},
+#endif
+#ifdef NFULNL_COPY_META
+  {"NFULNL_COPY_META", NULL, NFULNL_COPY_META, CONST_NUMBER},
+#endif
+#ifdef AF_UNSPEC
+  {"AF_UNSPEC", NULL, AF_UNSPEC, CONST_NUMBER},
+#endif
+#ifdef AF_UNIX
+  {"AF_UNIX", NULL, AF_UNIX, CONST_NUMBER},
+#endif
   {NULL, NULL, 0.0 , 0}
 };
 
@@ -1970,6 +2429,7 @@ static const obj_const netfilter_log_constants[] = {
 static const reg_sub_module reg_sub_modules[] = {
   { &(obj_type_nflog), REG_OBJECT, obj_nflog_pub_funcs, obj_nflog_methods, obj_nflog_metas, obj_nflog_bases, obj_nflog_fields, obj_nflog_constants, obj_nflog_implements, 0},
   { &(obj_type_nflog_group), REG_OBJECT, obj_nflog_group_pub_funcs, obj_nflog_group_methods, obj_nflog_group_metas, obj_nflog_group_bases, obj_nflog_group_fields, obj_nflog_group_constants, obj_nflog_group_implements, 0},
+  { &(obj_type_nflog_data), REG_OBJECT, obj_nflog_data_pub_funcs, obj_nflog_data_methods, obj_nflog_data_metas, obj_nflog_data_bases, obj_nflog_data_fields, obj_nflog_data_constants, obj_nflog_data_implements, 0},
   {NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0}
 };
 
