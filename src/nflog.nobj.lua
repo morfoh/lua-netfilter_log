@@ -158,4 +158,8 @@ c_function "get_outdev" {
 c_function "get_physoutdev" {
 	c_call "uint32_t" "nflog_get_physoutdev" { "nflog_data *", "nfad" },
 }
+-- get the logging string prefix
+c_function "get_prefix" {
+	c_call "char *" "nflog_get_prefix" { "nflog_data *", "nfad" },
+}
 
