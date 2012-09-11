@@ -52,38 +52,38 @@ export_definitions {
 object "nflog" {
 	-- The first constructor can be called as: netfilter_log.nflog() or netfilter_log.nflog.new()
 	-- The default name for a constructor is 'new'
-  constructor {
-    c_call "nflog *" "nflog_open" {}
-  },
+	constructor {
+		c_call "nflog *" "nflog_open" {}
+	},
 	-- "close" destructor allows freeing of the object before it gets GC'ed
-  destructor "close" {
-    c_method_call "int" "nflog_close" {}
-  },
+	destructor "close" {
+		c_method_call "int" "nflog_close" {}
+	},
 
-  method "bind_pf" {
-    c_method_call "int" "nflog_bind_pf" { "uint16_t", "pf" }
-  },
+	method "bind_pf" {
+		c_method_call "int" "nflog_bind_pf" { "uint16_t", "pf" }
+	},
 
-  method "unbind_pf" {
-    c_method_call "int" "nflog_unbind_pf" { "uint16_t", "pf" }
-  },
+	method "unbind_pf" {
+		c_method_call "int" "nflog_unbind_pf" { "uint16_t", "pf" }
+	},
 
-  method "fd" {
-    c_method_call "int" "nflog_fd" {}
-  },
-  method "handle_packet" {
+	method "fd" {
+		c_method_call "int" "nflog_fd" {}
+	},
+	method "handle_packet" {
 		var_out{ "int", "rc" },
 		c_source[[
 #define BUF_LEN 4096
-	int fd = nflog_fd(${this});
-	char buf[BUF_LEN];
+  int fd = nflog_fd(${this});
+  char buf[BUF_LEN];
 
-	${rc} = recv(fd, buf, sizeof(buf), 0);
-	if(${rc} >= 0) {
-		${rc} = nflog_handle_packet(${this}, buf, ${rc});
-	}
+  ${rc} = recv(fd, buf, sizeof(buf), 0);
+  if(${rc} >= 0) {
+    ${rc} = nflog_handle_packet(${this}, buf, ${rc});
+  }
 ]],
-  },
+	},
 }
 
 -- nflog callback type
@@ -96,41 +96,41 @@ callback_type "NFLogFunc" "int"
 object "nflog_group" {
 	-- The first constructor can be called as: netfilter_log.nflog_group() or netfilter_log.nflog_group.new()
 	-- The default name for a constructor is 'new'
-  constructor {
-    c_call "nflog_group *" "nflog_bind_group" { "nflog *", "nflog_handle", "uint16_t", "num"}
-  },
+	constructor {
+		c_call "nflog_group *" "nflog_bind_group" { "nflog *", "nflog_handle", "uint16_t", "num"}
+	},
 	-- "unbind" destructor allows freeing of the object before it gets GC'ed
-  destructor "unbind" {
-    c_method_call "int" "nflog_unbind_group" {}
-  },
+	destructor "unbind" {
+		c_method_call "int" "nflog_unbind_group" {}
+	},
 
-  method "set_mode" {
-    c_method_call "int" "nflog_set_mode" { "uint8_t", "mode", "uint32_t", "range" }
-  },
+	method "set_mode" {
+		c_method_call "int" "nflog_set_mode" { "uint8_t", "mode", "uint32_t", "range" }
+	},
 
-  method "set_timeout" {
-    c_method_call "int" "nflog_set_timeout" { "uint32_t", "timeout" }
-  },
+	method "set_timeout" {
+		c_method_call "int" "nflog_set_timeout" { "uint32_t", "timeout" }
+	},
 
-  method "set_qtresh" {
-    c_method_call "int" "nflog_set_qthresh" { "uint32_t", "qthresh" }
-  },
+	method "set_qtresh" {
+		c_method_call "int" "nflog_set_qthresh" { "uint32_t", "qthresh" }
+	},
 
-  method "set_nlbufsiz" {
-    c_method_call "int" "nflog_set_nlbufsiz" { "uint32_t", "nlbufsiz" }
-  },
+	method "set_nlbufsiz" {
+		c_method_call "int" "nflog_set_nlbufsiz" { "uint32_t", "nlbufsiz" }
+	},
 
-  method "set_flags" {
-    c_method_call "int" "nflog_set_flags" { "uint16_t", "flags" }
-  },
-  method "callback_register" {
+	method "set_flags" {
+		c_method_call "int" "nflog_set_flags" { "uint16_t", "flags" }
+	},
+	method "callback_register" {
 		callback { "NFLogFunc", "func", "func_data", owner = "this",
 			-- code to run if Lua callback function throws an error.
 			c_source[[${ret} = -1;]],
 			ffi_source[[${ret} = -1;]],
 		},
 		c_method_call "int" "nflog_callback_register" { "NFLogFunc", "func", "void *", "func_data" },
-  },
+	},
 }
 
 --

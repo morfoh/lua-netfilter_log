@@ -2060,13 +2060,13 @@ static int nflog__handle_packet__meth(lua_State *L) {
   int rc = 0;
   this = obj_type_nflog_check(L,1);
 #define BUF_LEN 4096
-	int fd = nflog_fd(this);
-	char buf[BUF_LEN];
+  int fd = nflog_fd(this);
+  char buf[BUF_LEN];
 
-	rc = recv(fd, buf, sizeof(buf), 0);
-	if(rc >= 0) {
-		rc = nflog_handle_packet(this, buf, rc);
-	}
+  rc = recv(fd, buf, sizeof(buf), 0);
+  if(rc >= 0) {
+    rc = nflog_handle_packet(this, buf, rc);
+  }
 
   lua_pushinteger(L, rc);
   return 1;
