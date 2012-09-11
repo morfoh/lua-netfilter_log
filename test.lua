@@ -38,7 +38,8 @@ print("nflog_set_mode:",gh0:set_mode(nf_log.NFULNL_COPY_PACKET, 0xffff))
 local fd = h:fd()
 print("fd = ", fd)
 
-print("callback = ", gh0:callback_register(cb))
+print("gh0:callback = ", gh0:callback_register(cb))
+print("gh1:callback = ", gh1:callback_register(cb))
 
 -- main loop
 ---[[
