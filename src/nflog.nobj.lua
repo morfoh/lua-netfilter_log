@@ -138,6 +138,10 @@ object "nflog_group" {
 c_function "get_hwtype" {
 	c_call "uint16_t" "nflog_get_hwtype" { "nflog_data *", "nfad" },
 }
+-- get the packet mark
+c_function "get_nfmark" {
+	c_call "uint32_t" "nflog_get_nfmark" { "nflog_data *", "nfad" },
+}
 -- get the interface that the packet was received through
 c_function "get_indev" {
 	c_call "uint32_t" "nflog_get_indev" { "nflog_data *", "nfad" },
