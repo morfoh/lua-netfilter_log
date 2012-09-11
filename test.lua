@@ -51,5 +51,5 @@ until rc < 0
 print("nflog_unbind from group 0:",gh:unbind())
 print("nflog_unbind from group 100:",gh100:unbind())
 
-print("nflog_closre:", h:close())
+print("nflog_close:", h:close())
 
