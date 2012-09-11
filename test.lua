@@ -28,17 +28,17 @@ print("nflog_unbind:",h:unbind_pf(nf_log.AF_INET))
 
 print("nflog_bind:",h:bind_pf(nf_log.AF_INET))
 
-local gh = nf_log.nflog_group(h, 0)
-print("gh = ", gh)
+local gh0 = nf_log.nflog_group(h, 0)
+print("gh0 = ", gh0)
 local gh100 = nf_log.nflog_group(h, 100)
 print("gh100 = ", gh100)
 
-print("nflog_set_mode:",gh:set_mode(nf_log.NFULNL_COPY_PACKET, 0xffff))
+print("nflog_set_mode:",gh0:set_mode(nf_log.NFULNL_COPY_PACKET, 0xffff))
 
 local fd = h:fd()
 print("fd = ", fd)
 
-print("callback = ", gh:callback_register(cb))
+print("callback = ", gh0:callback_register(cb))
 
 -- main loop
 ---[[
@@ -48,7 +48,7 @@ repeat
 until rc < 0
 --]]
 
-print("nflog_unbind from group 0:",gh:unbind())
+print("nflog_unbind from group 0:",gh0:unbind())
 print("nflog_unbind from group 100:",gh100:unbind())
 
 print("nflog_close:", h:close())
