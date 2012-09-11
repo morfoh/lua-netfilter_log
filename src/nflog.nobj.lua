@@ -18,7 +18,6 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 -- THE SOFTWARE.
 
-basetype "nflog_data *"		"lightuserdata" "NULL"
 basetype "nfgenmsg *"		"lightuserdata" "NULL"
 
 -- typedefs
@@ -134,32 +133,36 @@ object "nflog_group" {
   },
 }
 
--- get the hardware link layer type from logging data
-c_function "get_hwtype" {
-	c_call "uint16_t" "nflog_get_hwtype" { "nflog_data *", "nfad" },
+--
+-- nflog_data
+--
+object "nflog_data" {
+	-- get the hardware link layer type from logging data
+	method "get_hwtype" {
+		c_method_call "uint16_t" "nflog_get_hwtype" {}
+	},
+	-- get the packet mark
+	method "get_nfmark" {
+		c_method_call "uint32_t" "nflog_get_nfmark" {}
+	},
+	-- get the interface that the packet was received through
+	method "get_indev" {
+		c_method_call "uint32_t" "nflog_get_indev" {}
+	},
+	-- get the physical interface that the packet was received
+	method "get_physindev" {
+		c_method_call "uint32_t" "nflog_get_physindev" {}
+	},
+	-- gets the interface that the packet will be routed out
+	method "get_outdev" {
+		c_method_call "uint32_t" "nflog_get_outdev" {}
+	},
+	-- get the physical interface that the packet output
+	method "get_physoutdev" {
+		c_method_call "uint32_t" "nflog_get_physoutdev" {}
+	},
+	-- get the logging string prefix
+	method "get_prefix" {
+		c_method_call "char *" "nflog_get_prefix" {}
+	},
 }
--- get the packet mark
-c_function "get_nfmark" {
-	c_call "uint32_t" "nflog_get_nfmark" { "nflog_data *", "nfad" },
-}
--- get the interface that the packet was received through
-c_function "get_indev" {
-	c_call "uint32_t" "nflog_get_indev" { "nflog_data *", "nfad" },
-}
--- get the physical interface that the packet was received
-c_function "get_physindev" {
-	c_call "uint32_t" "nflog_get_physindev" { "nflog_data *", "nfad" },
-}
--- gets the interface that the packet will be routed out
-c_function "get_outdev" {
-	c_call "uint32_t" "nflog_get_outdev" { "nflog_data *", "nfad" },
-}
--- get the physical interface that the packet output
-c_function "get_physoutdev" {
-	c_call "uint32_t" "nflog_get_physoutdev" { "nflog_data *", "nfad" },
-}
--- get the logging string prefix
-c_function "get_prefix" {
-	c_call "char *" "nflog_get_prefix" { "nflog_data *", "nfad" },
-}
-
