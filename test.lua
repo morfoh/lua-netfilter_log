@@ -4,6 +4,11 @@ local nf_log = require"netfilter_log"
 -- print packet information
 local function print_pkt(ldata)
 	io.write("print_pkt(): ")
+	-- timestamp
+	local tssec, tsusec = ldata:get_timestamp()
+	if tssec and tsusec then
+		io.write("timestamp=" .. tssec .."." .. tsusec .. " ")
+	end
 	local seq_global = ldata:get_seq_global()
 	if seq_global then
 		io.write("seq_global=" .. seq_global .. " ")
