@@ -12,6 +12,10 @@ local function print_pkt(ldata)
 	io.write("outdev=", ldata:get_outdev() .. " ")
 	io.write("physoutdev=", ldata:get_physoutdev() .. " ")
 	io.write("hwhdrlen=", ldata:get_msg_packet_hwhdrlen() .. " ")
+	local uid = ldata:get_uid()
+	if uid then
+		io.write("uid=" .. uid .. " ")
+	end
 	io.write("\n")
 end
 
