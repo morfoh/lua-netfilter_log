@@ -16,6 +16,10 @@ local function print_pkt(ldata)
 	if uid then
 		io.write("uid=" .. uid .. " ")
 	end
+	local gid = ldata:get_gid()
+	if gid then
+		io.write("gid=" .. gid .. " ")
+	end
 	io.write("\n")
 end
 
