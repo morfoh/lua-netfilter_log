@@ -19,6 +19,7 @@
 -- THE SOFTWARE.
 
 basetype "nfgenmsg *"		"lightuserdata" "NULL"
+basetype "useconds_t"		"integer" "0"
 
 -- typedefs
 local typedefs = [[
@@ -154,6 +155,26 @@ object "nflog_data" {
 	-- get the packet mark
 	method "get_nfmark" {
 		c_method_call "uint32_t" "nflog_get_nfmark" {}
+	},
+	-- get the packet timestamp
+	method "get_timestamp" {
+		var_out { "time_t", "tv_sec" },
+		var_out { "useconds_t", "tv_usec" },
+		c_source "pre_src" [[
+  int rc;
+  struct timeval tv;
+]],
+		c_source [[
+  rc = nflog_get_timestamp(this, &tv);
+
+  /* return nil on failure */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+  ${tv_sec} = tv.tv_sec;
+  ${tv_usec} = tv.tv_usec;
+]],
 	},
 	-- get the interface that the packet was received through
 	method "get_indev" {

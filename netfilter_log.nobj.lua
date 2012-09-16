@@ -10,6 +10,7 @@ luajit_ffi = true,
 ffi_load"netfilter_log",
 
 sys_include "sys/types.h",
+sys_include "unistd.h",
 sys_include "netdb.h",
 sys_include "libnetfilter_log/libnetfilter_log.h",
 
