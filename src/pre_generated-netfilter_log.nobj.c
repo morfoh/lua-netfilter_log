@@ -2405,6 +2405,25 @@ static int nflog_data__get_gid__meth(lua_State *L) {
   return 1;
 }
 
+/* method: get_seq */
+static int nflog_data__get_seq__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t seq = 0;
+  this = obj_type_nflog_data_check(L,1);
+  int rc;
+
+  rc = nflog_get_seq(this, &seq);
+
+  /* return nil when there is no seq attribute available */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+
+  lua_pushinteger(L, seq);
+  return 1;
+}
+
 
 
 static const luaL_reg obj_nflog_pub_funcs[] = {
@@ -2498,6 +2517,7 @@ static const luaL_reg obj_nflog_data_methods[] = {
   {"get_prefix", nflog_data__get_prefix__meth},
   {"get_uid", nflog_data__get_uid__meth},
   {"get_gid", nflog_data__get_gid__meth},
+  {"get_seq", nflog_data__get_seq__meth},
   {NULL, NULL}
 };
 
