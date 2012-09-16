@@ -19,6 +19,7 @@
 
 
 #include <sys/types.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <libnetfilter_log/libnetfilter_log.h>
 
@@ -2317,6 +2318,30 @@ static int nflog_data__get_nfmark__meth(lua_State *L) {
   return 1;
 }
 
+/* method: get_timestamp */
+static int nflog_data__get_timestamp__meth(lua_State *L) {
+  nflog_data * this;
+  time_t tv_sec = 0;
+  useconds_t tv_usec = 0;
+  this = obj_type_nflog_data_check(L,1);
+  int rc;
+  struct timeval tv;
+
+  rc = nflog_get_timestamp(this, &tv);
+
+  /* return nil on failure */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+  tv_sec = tv.tv_sec;
+  tv_usec = tv.tv_usec;
+
+  lua_pushinteger(L, tv_sec);
+  lua_pushinteger(L, tv_usec);
+  return 2;
+}
+
 /* method: get_indev */
 static int nflog_data__get_indev__meth(lua_State *L) {
   nflog_data * this;
@@ -2529,6 +2554,7 @@ static const luaL_reg obj_nflog_data_methods[] = {
   {"get_hwtype", nflog_data__get_hwtype__meth},
   {"get_msg_packet_hwhdrlen", nflog_data__get_msg_packet_hwhdrlen__meth},
   {"get_nfmark", nflog_data__get_nfmark__meth},
+  {"get_timestamp", nflog_data__get_timestamp__meth},
   {"get_indev", nflog_data__get_indev__meth},
   {"get_physindev", nflog_data__get_physindev__meth},
   {"get_outdev", nflog_data__get_outdev__meth},
