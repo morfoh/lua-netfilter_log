@@ -42,6 +42,7 @@ export_definitions {
 "AF_NETLINK",
 "AF_PACKET",
 
+-- copy packet modes
 "NFULNL_COPY_NONE",
 "NFULNL_COPY_META",
 "NFULNL_COPY_PACKET",
