@@ -170,6 +170,22 @@ object "nflog_data" {
 	method "get_prefix" {
 		c_method_call "char *" "nflog_get_prefix" {}
 	},
+	-- get the UID of the user that has generated the packet
+	method "get_uid" {
+		var_out { "uint32_t", "uid" },
+		c_source "pre_src" [[
+  int rc;
+]],
+		c_source [[
+  rc = nflog_get_uid(this, &uid);
+
+  /* return nil when there is no uid attribute available */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+]],
+	},
 }
 
 --

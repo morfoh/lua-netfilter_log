@@ -2367,6 +2367,25 @@ static int nflog_data__get_prefix__meth(lua_State *L) {
   return 1;
 }
 
+/* method: get_uid */
+static int nflog_data__get_uid__meth(lua_State *L) {
+  nflog_data * this;
+  uint32_t uid = 0;
+  this = obj_type_nflog_data_check(L,1);
+  int rc;
+
+  rc = nflog_get_uid(this, &uid);
+
+  /* return nil when there is no uid attribute available */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+
+  lua_pushinteger(L, uid);
+  return 1;
+}
+
 
 
 static const luaL_reg obj_nflog_pub_funcs[] = {
@@ -2458,6 +2477,7 @@ static const luaL_reg obj_nflog_data_methods[] = {
   {"get_outdev", nflog_data__get_outdev__meth},
   {"get_physoutdev", nflog_data__get_physoutdev__meth},
   {"get_prefix", nflog_data__get_prefix__meth},
+  {"get_uid", nflog_data__get_uid__meth},
   {NULL, NULL}
 };
 
