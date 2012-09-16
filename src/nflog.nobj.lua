@@ -186,6 +186,22 @@ object "nflog_data" {
   }
 ]],
 	},
+	-- get the GID of the user that has generated the packet
+	method "get_gid" {
+		var_out { "uint32_t", "gid" },
+		c_source "pre_src" [[
+  int rc;
+]],
+		c_source [[
+  rc = nflog_get_gid(this, &gid);
+
+  /* return nil when there is no gid attribute available */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+]],
+	},
 }
 
 --
