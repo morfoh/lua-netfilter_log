@@ -2567,11 +2567,17 @@ static const obj_const netfilter_log_constants[] = {
 #ifdef AF_IPX
   {"AF_IPX", NULL, AF_IPX, CONST_NUMBER},
 #endif
+#ifdef NFULNL_CFG_F_SEQ_GLOBAL
+  {"NFULNL_CFG_F_SEQ_GLOBAL", NULL, NFULNL_CFG_F_SEQ_GLOBAL, CONST_NUMBER},
+#endif
 #ifdef AF_NETLINK
   {"AF_NETLINK", NULL, AF_NETLINK, CONST_NUMBER},
 #endif
 #ifdef AF_PACKET
   {"AF_PACKET", NULL, AF_PACKET, CONST_NUMBER},
+#endif
+#ifdef NFULNL_CFG_F_SEQ
+  {"NFULNL_CFG_F_SEQ", NULL, NFULNL_CFG_F_SEQ, CONST_NUMBER},
 #endif
 #ifdef AF_INET
   {"AF_INET", NULL, AF_INET, CONST_NUMBER},

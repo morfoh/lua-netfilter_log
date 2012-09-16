@@ -46,6 +46,10 @@ export_definitions {
 "NFULNL_COPY_NONE",
 "NFULNL_COPY_META",
 "NFULNL_COPY_PACKET",
+
+-- nflog handle flags
+"NFULNL_CFG_F_SEQ",
+"NFULNL_CFG_F_SEQ_GLOBAL",
 }
 
 --
