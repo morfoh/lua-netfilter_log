@@ -224,6 +224,23 @@ object "nflog_data" {
   }
 ]],
 	},
+	-- get the global nflog sequence number
+	-- must be enabled with set_flags()
+	method "get_seq_global" {
+		var_out { "uint32_t", "seq" },
+		c_source "pre_src" [[
+  int rc;
+]],
+		c_source [[
+  rc = nflog_get_seq_global(this, &seq);
+
+  /* return nil when there is no seq attribute available */
+  if (rc == -1) {
+	lua_pushnil(L);
+	return 1;
+  }
+]],
+	},
 }
 
 --
