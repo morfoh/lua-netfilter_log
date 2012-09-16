@@ -4,6 +4,10 @@ local nf_log = require"netfilter_log"
 -- print packet information
 local function print_pkt(ldata)
 	io.write("print_pkt(): ")
+	local seq_global = ldata:get_seq_global()
+	if seq_global then
+		io.write("seq_global=" .. seq_global .. " ")
+	end
 	local seq = ldata:get_seq()
 	if seq then
 		io.write("seq=" .. seq .. " ")
@@ -46,9 +50,9 @@ local gh1 = nf_log.nflog_group(h, 1)
 print("gh1 = ", gh1)
 
 print("nflog_set_mode:",gh0:set_mode(nf_log.NFULNL_COPY_PACKET, 0xffff))
-print("enable local sequence numbering")
-print("nflog_set_flags:",gh0:set_flags(nf_log.NFULNL_CFG_F_SEQ))
-print("nflog_set_flags:",gh1:set_flags(nf_log.NFULNL_CFG_F_SEQ))
+print("enable local and global sequence numbering")
+print("nflog_set_flags:",gh0:set_flags(nf_log.NFULNL_CFG_F_SEQ + nf_log.NFULNL_CFG_F_SEQ_GLOBAL))
+print("nflog_set_flags:",gh1:set_flags(nf_log.NFULNL_CFG_F_SEQ + nf_log.NFULNL_CFG_F_SEQ_GLOBAL))
 
 local fd = h:fd()
 print("fd = ", fd)
